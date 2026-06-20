@@ -84,11 +84,46 @@ def GradientDescent(x, maxIter, epsilon):
             break
     return x, f_vals, f_norms
 
+def Newton(x, maxIter, epsilon):
+    #Initialize values
+    gradient_f = grad_f(x)
+
+    #Initialize values and norms
+    f_vals = [f(x)]
+    f_norms = [np.linalg.norm(gradient_f)]
+    for k in range(maxIter):
+        x_norm = np.linalg.norm(x)
+        hessian_f = hess_f(x)
+        inv_hess = np.linalg.inv(hessian_f)
+        d = -1 *(inv_hess @ gradient_f)
+        
+        alpha, iters = ArmijoLinesearch(x=x, obj_f=f, grad_x=gradient_f, d=d, maxIter=maxIter)
+        x = x + alpha * d
+        
+        curr_f = f(x)
+        gradient_f = grad_f(x)
+        
+        f_vals.append(curr_f)
+        f_norms.append(np.linalg.norm(gradient_f))
+        if(np.linalg.norm(alpha * d) / x_norm < epsilon):
+            break
+    return x, f_vals, f_norms
+
+
 x0 = np.random.randn(2)
 x_sol, f_vals, f_norms = GradientDescent(x0, 100, 1e-6)
 
+plt.semilogy(f_vals, color="Red", label="f(x) value")
+plt.plot(f_norms, color="Blue", label="Gradient f(x) norm")
+plt.title("Gradient Descent")
+plt.legend()
+plt.show()
+
+x0 = np.random.randn(2)
+x_sol, f_vals, f_norms = Newton(x0, 100, 1e-6)
 
 plt.semilogy(f_vals, color="Red", label="f(x) value")
 plt.plot(f_norms, color="Blue", label="Gradient f(x) norm")
+plt.title("Newton's Method")
 plt.legend()
 plt.show()
