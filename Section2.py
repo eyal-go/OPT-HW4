@@ -81,7 +81,7 @@ def hess_f(x, i):
 #Because GD doesn't use the actual Hessian of f, we don't need to worry about non-convexity.
 def GradientDescent(x, maxIter, epsilon):
     #Initial values
-    gradient_f = grad_f(x)
+    gradient_f = grad_f(x, 2)
 
     #Initialize values and norms
     f_vals = [f(x)]
@@ -94,7 +94,7 @@ def GradientDescent(x, maxIter, epsilon):
         x = x + alpha * d
         
         curr_f = f(x)
-        gradient_f = grad_f(x)
+        gradient_f = grad_f(x, 2)
         
         f_vals.append(curr_f)
         f_norms.append(np.linalg.norm(gradient_f))
@@ -104,14 +104,14 @@ def GradientDescent(x, maxIter, epsilon):
 
 def Newton(x, maxIter, epsilon):
     #Initialize values
-    gradient_f = grad_f(x)
+    gradient_f = grad_f(x, 2)
 
     #Initialize values and norms
     f_vals = [f(x)]
     f_norms = [np.linalg.norm(gradient_f)]
     for k in range(maxIter):
         x_norm = np.linalg.norm(x)
-        hessian_f = hess_f(x)
+        hessian_f = hess_f(x, 2)
         #Here we'll try to use cholesky decomposition to calculate the inverse of the hessian
         #If it doesn't work, we'll do a step of GD instead
         try:
@@ -126,7 +126,7 @@ def Newton(x, maxIter, epsilon):
         x = x + alpha * d
         
         curr_f = f(x)
-        gradient_f = grad_f(x)
+        gradient_f = grad_f(x, 2)
         
         f_vals.append(curr_f)
         f_norms.append(np.linalg.norm(gradient_f))
