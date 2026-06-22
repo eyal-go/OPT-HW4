@@ -24,6 +24,7 @@ def ArmijoLinesearch(x, obj_f, grad_x, d, maxIter):
     return alpha, maxIter #if we got maxIter, we will terminate the search.
    
 ### Gradients and Hessians of g(x) ###
+### i parameter indicates exactly which values we need to calculate ###
 def g(x):
     x1 = x[0]
     x2 = x[1]
@@ -68,8 +69,8 @@ def hess_g(x, i):
 
 ### Gradient and Hessian of f(x) ###
 
-def f(x, i):
-    return g(B @ x, i)
+def f(x):
+    return g(B @ x)
 
 def grad_f(x, i):
     return B @ grad_g(B @ x, i)
@@ -134,7 +135,34 @@ def Newton(x, maxIter, epsilon):
             break
     return x, f_vals, f_norms
 
+def CoordinateDescent(x, maxIter, epsilon):
+    #Initial values
+    gradient_f = grad_f(x, 2)
 
+    #Initialize values and norms
+    f_vals = [f(x)]
+    f_norms = [np.linalg.norm(gradient_f)]
+    for k in range(maxIter):
+        x_norm = np.linalg.norm(x)
+        distance = np.zeros(2)
+        for i in range (2):
+            gradient_f[i] = grad_f(x, i)[i]
+            d = np.zeros(2)
+            d[i] = -(gradient_f[i])/np.abs(hess_f(x, i)[i, i]) #Absolute value since f is non-convex
+            alpha, iters = ArmijoLinesearch(x=x, obj_f=f, grad_x=gradient_f, d=d, maxIter=maxIter)
+            x[i] = x[i] + alpha*d[i]
+            distance[i] = alpha*d[i]
+
+        curr_f = f(x)
+        f_vals.append(curr_f)
+        f_norms.append(np.linalg.norm(gradient_f))
+        if(np.linalg.norm(distance) / x_norm < epsilon):
+            break
+
+    return x, f_vals, f_norms    
+
+
+### Gradient Descent ###
 x0 = np.random.randn(2)
 x_sol, f_vals, f_norms = GradientDescent(x0, 100, 1e-6)
 print(x0)
@@ -145,6 +173,8 @@ plt.title("Gradient Descent")
 plt.legend()
 plt.show()
 
+
+### Newton's Method ###
 x0 = np.random.randn(2)
 x_sol, f_vals, f_norms = Newton(x0, 100, 1e-6)
 print(x0)
@@ -152,5 +182,17 @@ print(x0)
 plt.semilogy(f_vals, color="Red", label="f(x) value")
 plt.plot(f_norms, color="Blue", label="Gradient f(x) norm")
 plt.title("Newton's Method")
+plt.legend()
+plt.show()
+
+
+### Coordiante Descent ###
+x0 = np.random.randn(2)
+x_sol, f_vals, f_norms = CoordinateDescent(x0, 100, 1e-6)
+print(x0)
+
+plt.semilogy(f_vals, color="Red", label="f(x) value")
+plt.plot(f_norms, color="Blue", label="Gradient f(x) norm")
+plt.title("Coordiante Descent")
 plt.legend()
 plt.show()
