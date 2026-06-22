@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.linalg import solve_triangular
 
 B = 0.5 * np.array([[3, 1], [1, 3]])
 
@@ -29,35 +30,52 @@ def g(x):
 
     return ((x1**2 + x2 -11)**2 + (x1 + x2**2 -7)**2)
 
-def grad_g(x):
+def grad_g(x, i):
     x1 = x[0]
     x2 = x[1]
 
-    dg_dx1 = 2*(x1**2 + x2 -11)*2*x1 + 2*(x1 + x2**2 - 7)
-    dg_dx2 = 2*(x1**2 + x2 -11) + 2*(x1 + x2**2 - 7)*2*x2
+    dg_dx1 = 0
+    dg_dx2 = 0
+
+    if(i == 2):
+        dg_dx1 = 2*(x1**2 + x2 -11)*2*x1 + 2*(x1 + x2**2 - 7)
+        dg_dx2 = 2*(x1**2 + x2 -11) + 2*(x1 + x2**2 - 7)*2*x2
+    elif(i == 0):
+        dg_dx1 = 2*(x1**2 + x2 -11)*2*x1 + 2*(x1 + x2**2 - 7)
+    elif(i == 1):
+        dg_dx2 = 2*(x1**2 + x2 -11) + 2*(x1 + x2**2 - 7)*2*x2
 
     return np.array([dg_dx1, dg_dx2])
 
-def hess_g(x):
+def hess_g(x, i):
     x1 = x[0]
     x2 = x[1]
 
-    d2g_dx12 = 8*x1**2 + 4*(x1**2 + x2 -11) + 2
-    d2g_dx22 = 8*x2**2 + 4*(x1 + x2**2 -7) + 2
-    d2g_dx1x2 = 4*(x1 + x2)
+    d2g_dx12 = 0
+    d2g_dx22 = 0
+    d2g_dx1x2 = 0
 
+    if(i == 2):
+        d2g_dx1x2 = 4*(x1 + x2)
+        d2g_dx12 = 8*x1**2 + 4*(x1**2 + x2 -11) + 2
+        d2g_dx22 = 8*x2**2 + 4*(x1 + x2**2 -7) + 2
+    elif(i == 0):
+        d2g_dx12 = 8*x1**2 + 4*(x1**2 + x2 -11) + 2
+    elif(i == 1):
+        d2g_dx22 = 8*x2**2 + 4*(x1 + x2**2 -7) + 2
+        
     return np.array([[d2g_dx12, d2g_dx1x2], [d2g_dx1x2, d2g_dx22]])
 
 ### Gradient and Hessian of f(x) ###
 
-def f(x):
-    return g(B @ x)
+def f(x, i):
+    return g(B @ x, i)
 
-def grad_f(x):
-    return B @ grad_g(B @ x)
+def grad_f(x, i):
+    return B @ grad_g(B @ x, i)
 
-def hess_f(x):
-    return B @ hess_g(B @ x) @ B
+def hess_f(x, i):
+    return B @ hess_g(B @ x, i) @ B
 
 
 #Because GD doesn't use the actual Hessian of f, we don't need to worry about non-convexity.
@@ -94,8 +112,15 @@ def Newton(x, maxIter, epsilon):
     for k in range(maxIter):
         x_norm = np.linalg.norm(x)
         hessian_f = hess_f(x)
-        inv_hess = np.linalg.inv(hessian_f)
-        d = -1 *(inv_hess @ gradient_f)
+        #Here we'll try to use cholesky decomposition to calculate the inverse of the hessian
+        #If it doesn't work, we'll do a step of GD instead
+        try:
+            L = np.linalg.cholesky(hessian_f)
+            LT = np.transpose(L)
+            Y = solve_triangular(L, -gradient_f, lower = True)
+            d = solve_triangular(LT, Y, lower = False)
+        except np.linalg.LinAlgError:
+            d = -gradient_f
         
         alpha, iters = ArmijoLinesearch(x=x, obj_f=f, grad_x=gradient_f, d=d, maxIter=maxIter)
         x = x + alpha * d
@@ -112,6 +137,7 @@ def Newton(x, maxIter, epsilon):
 
 x0 = np.random.randn(2)
 x_sol, f_vals, f_norms = GradientDescent(x0, 100, 1e-6)
+print(x0)
 
 plt.semilogy(f_vals, color="Red", label="f(x) value")
 plt.plot(f_norms, color="Blue", label="Gradient f(x) norm")
@@ -121,6 +147,7 @@ plt.show()
 
 x0 = np.random.randn(2)
 x_sol, f_vals, f_norms = Newton(x0, 100, 1e-6)
+print(x0)
 
 plt.semilogy(f_vals, color="Red", label="f(x) value")
 plt.plot(f_norms, color="Blue", label="Gradient f(x) norm")
